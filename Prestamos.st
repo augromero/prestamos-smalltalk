@@ -5,57 +5,47 @@ OrderedCollection subclass: #TablaAmortizacion
 	poolDictionaries: ''
 	category: 'Prestamos'!
 
-!TablaAmortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 01:56:26'!
-initializeConSaldoInicial: unMonto conCuotas: unPlazo 
-	
-	|amortizacion|
-	
-	monto := unMonto.
-	plazo := unPlazo.
-	
-	amortizacion := Amortizacion conSaldoInicial: unMonto enCuota: unPlazo.
-	self add: amortizacion.! !
-
-!TablaAmortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 03:26:51'!
+!TablaAmortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 12:48:51'!
 initializeConSaldoInicial: unMonto conCuotas: unPlazo conInteres: unaTasaPeriodica 
-	
-	| amortizacion |
-	
+		
 	monto := unMonto.
 	plazo := unPlazo.
 	tasaPeriodica := unaTasaPeriodica.
+		
+	self add: (Amortizacion conSaldoInicial: monto enCuota: 1 conTasa: tasaPeriodica conCapital: (monto/plazo) rounded).
+		
+	(1 to: plazo -1) do: [:i | self add: ((self ultimaCuota) siguienteCuotaConTasa: tasaPeriodica)].
 	
-	amortizacion := Amortizacion conSaldoInicial: unMonto enCuota: 1 conTasa: tasaPeriodica.
-	
-	self add: amortizacion.! !
+! !
 
 
-!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 02:28:55'!
+!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 09:23:52'!
 cuotasFaltantes
-	^self size - (self at:1) numeroCuota + 1.! !
+	^self size.! !
 
 !TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 03:35:17'!
 interesesProyectados
 	^self inject: 0 into: [:sumaIntereses :cuota |  sumaIntereses + cuota interes ]! !
 
-!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 02:16:13'!
+!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 11:41:02'!
 saldoActual
-	self first saldo.! !
+	self first saldoInicial.! !
 
-!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 03:42:49'!
+!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 11:39:59'!
+ultimaCuota
+
+	^ self atLast: 1! !
+
+!TablaAmortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 14:38:08'!
 valorPrimeraCuota
-	^(self at:1) valorCuota.! !
+	^self first valorCuota.! !
+
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
 !classDefinition: 'TablaAmortizacion class' category: #Prestamos!
 TablaAmortizacion class
 	instanceVariableNames: ''!
-
-!TablaAmortizacion class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 01:43:42'!
-conSaldoInicial: unMonto conCuotas: unPlazo 
-	
-	^self new initializeConSaldoInicial: unMonto conCuotas: unPlazo ! !
 
 !TablaAmortizacion class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 03:14:08'!
 conSaldoInicial: unMonto conCuotas: unPlazo conInteres: unaTasaPeriodica 
@@ -70,14 +60,22 @@ Object subclass: #Amortizacion
 	poolDictionaries: ''
 	category: 'Prestamos'!
 
-!Amortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 03:28:47'!
-initializeConSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica  
+!Amortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 14:21:17'!
+initializeConSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica conCapital: unCapital   
 	
 	saldoInicial := unMonto.
 	numeroCuota := unNumeroDeCuota.
-	capital := unMonto.
-	interes:= saldoInicial * unaTasaPeriodica.
-	saldoFinal := saldoInicial - capital.! !
+	capital := unCapital.
+	interes:= (saldoInicial * unaTasaPeriodica) rounded.
+	saldoFinal := saldoInicial - capital.
+	
+	(saldoFinal < capital) ifTrue: [capital := capital + saldoFinal. saldoFinal := 0 ].! !
+
+!Amortizacion methodsFor: 'initialization' stamp: 'ARA 4/9/2020 14:34:13'!
+siguienteCuotaConTasa: unaTasa
+	"comment stating purpose of message"
+
+	^Amortizacion conSaldoInicial: saldoFinal  enCuota: numeroCuota  + 1 conTasa: unaTasa  conCapital: capital .! !
 
 
 !Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 03:36:02'!
@@ -85,18 +83,20 @@ interes
 	
 	^interes.! !
 
-!Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 02:26:59'!
-numeroCuota
+!Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 11:14:08'!
+saldoFinal
 	
-	^numeroCuota.! !
+	^saldoFinal! !
 
-!Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 02:07:39'!
-saldo
-	^saldoInicial.! !
+!Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 09:50:45'!
+saldoInicial
+	
+	^saldoInicial! !
 
 !Amortizacion methodsFor: 'accessing' stamp: 'ARA 4/9/2020 03:43:43'!
 valorCuota
 	^capital + interes.! !
+
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -104,10 +104,11 @@ valorCuota
 Amortizacion class
 	instanceVariableNames: ''!
 
-!Amortizacion class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 03:25:20'!
-conSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica  
+!Amortizacion class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 11:05:35'!
+conSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica conCapital: unCapital 
 	
-	^self new initializeConSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica ! !
+	^self new initializeConSaldoInicial: unMonto enCuota: unNumeroDeCuota conTasa: unaTasaPeriodica conCapital: unCapital. ! !
+
 
 
 !classDefinition: #Prestamo category: #Prestamos!
@@ -139,9 +140,13 @@ interesesProyectados
 cuotasFaltantes
 	^amortizaciones cuotasFaltantes.! !
 
-!Prestamo methodsFor: 'accessing' stamp: 'ARA 4/9/2020 02:16:43'!
+!Prestamo methodsFor: 'accessing' stamp: 'ARA 4/9/2020 11:41:32'!
 saldoActual
-	^(amortizaciones at:1) saldo.! !
+	^(amortizaciones at:1) saldoInicial.! !
+
+!Prestamo methodsFor: 'accessing' stamp: 'ARA 4/9/2020 14:29:28'!
+saldoFinalProyectado
+	^amortizaciones ultimaCuota saldoFinal.! !
 
 !Prestamo methodsFor: 'accessing' stamp: 'ARA 4/9/2020 03:41:52'!
 valorProximaCuota
@@ -153,7 +158,7 @@ valorProximaCuota
 Prestamo class
 	instanceVariableNames: ''!
 
-!Prestamo class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 03:04:34'!
-conMonto: unMonto conTasa: unaTasa aPlazo: unPlazo 
+!Prestamo class methodsFor: 'instance creation' stamp: 'ARA 4/9/2020 09:22:50'!
+conMonto: unMonto conTasaPeriodica: unaTasa aPlazo: unPlazo 
 	
 	^self new initializeConMonto: unMonto conTasa: unaTasa aPlazo: unPlazo ! !
